@@ -76,4 +76,20 @@ function convertirHora(hora) {
   return mapa[hora];
 }
 
-module.exports = { guardarCita, cancelarCita };
+async function reagendarCita(telefono, { dia, hora }) {
+  const fecha = proximaFecha(dia);
+  const horaFormato = convertirHora(hora);
+
+  const result = await pool.query(
+    `UPDATE citas SET fecha = $1, hora = $2
+     WHERE cliente_id = (SELECT id FROM clientes WHERE telefono = $3)
+     AND estado = 'confirmada'
+     AND fecha >= NOW()::date
+     RETURNING id`,
+    [fecha, horaFormato, telefono]
+  );
+
+  return result.rowCount > 0 ? result.rows[0].id : null;
+}
+
+module.exports = { guardarCita, cancelarCita, reagendarCita };

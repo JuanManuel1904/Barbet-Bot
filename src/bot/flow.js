@@ -1,7 +1,7 @@
 // src/bot/flow.js
 const { getSession, updateSession, clearSession } = require('./session');
 const { sendMessage } = require('../services/whatsapp');
-const { guardarCita, cancelarCita } = require('../services/citas');
+const { guardarCita, cancelarCita, reagendarCita } = require('../services/citas');
 
 
 const SERVICIOS = {
@@ -30,6 +30,16 @@ async function handleMessage(from, text) {
     clearSession(from);
     return;
   }
+
+  if (msg === 'reagendar') {
+  updateSession(from, 'REAGENDANDO_FECHA');
+  await sendMessage(from,
+    '📅 ¿A qué día quieres mover tu cita?\n\n' +
+    '1️⃣ Lunes\n2️⃣ Martes\n3️⃣ Miércoles\n' +
+    '4️⃣ Jueves\n5️⃣ Viernes\n6️⃣ Sábado'
+  );
+  return;
+}
 
   switch (session.step) {
 
@@ -129,6 +139,40 @@ async function handleMessage(from, text) {
         await sendMessage(from, 'Responde 1 para confirmar o 2 para cancelar.');
       }
       break;
+
+    case 'REAGENDANDO_FECHA': {
+      const dias = { '1':'Lunes','2':'Martes','3':'Miércoles','4':'Jueves','5':'Viernes','6':'Sábado' };
+      if (!dias[msg]) {
+        await sendMessage(from, '❌ Opción inválida. Responde un número del 1 al 6.');
+        break;
+      }
+      updateSession(from, 'REAGENDANDO_HORA', { nuevoDia: dias[msg] });
+      await sendMessage(from,
+        '🕐 ¿A qué hora?\n\n' +
+        '1️⃣ 9:00am\n2️⃣ 11:00am\n3️⃣ 1:00pm\n4️⃣ 3:00pm\n5️⃣ 5:00pm'
+      );
+      break;
+    }
+
+    case 'REAGENDANDO_HORA': {
+      const horas = { '1':'9:00am','2':'11:00am','3':'1:00pm','4':'3:00pm','5':'5:00pm' };
+      if (!horas[msg]) {
+        await sendMessage(from, '❌ Opción inválida. Responde un número del 1 al 5.');
+        break;
+      }
+      const { nuevoDia } = session.data;
+      const citaId = await reagendarCita(from, { dia: nuevoDia, hora: horas[msg] });
+      if (citaId) {
+        await sendMessage(from,
+          `✅ ¡Cita reagendada! (ID: #${citaId})\n` +
+          `📅 ${nuevoDia} a las ${horas[msg]}`
+        );
+      } else {
+        await sendMessage(from, '⚠️ No encontré citas activas para reagendar.');
+      }
+      clearSession(from);
+      break;
+    }
 
     default:
       clearSession(from);
