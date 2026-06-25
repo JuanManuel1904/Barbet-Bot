@@ -2,6 +2,8 @@ require('dotenv').config();
 
 const { sendMessage } = require('./services/whatsapp');
 const { handleMessage } = require('./bot/flow');
+const { iniciarRecordatorios } = require('./services/recordatorios');
+
 
 console.log('Token:', process.env.ACCESS_TOKEN?.slice(0, 20) + '...');
 console.log('Phone ID:', process.env.PHONE_NUMBER_ID);
@@ -42,3 +44,6 @@ app.post('/webhook', async (req, res) => {
 app.listen(process.env.PORT, () => {
   console.log(`🚀 Servidor corriendo en puerto ${process.env.PORT}`);
 });
+
+iniciarRecordatorios();
+
