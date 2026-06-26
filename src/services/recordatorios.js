@@ -60,6 +60,19 @@ function iniciarRecordatorios() {
     }
   });
 
+  cron.schedule('*/30 * * * *', async () => {
+    try {
+      const result = await pool.query(
+        `DELETE FROM sessions WHERE updated_at < NOW() - INTERVAL '30 minutes'`
+      );
+      if (result.rowCount > 0) {
+        console.log(`🧹 Sesiones abandonadas eliminadas: ${result.rowCount}`);
+      }
+    } catch (err) {
+      console.error('❌ Error limpiando sesiones:', err.message);
+    }
+  });
+
   console.log('⏰ Sistema de recordatorios activo');
 
   // Limpieza inicial al arrancar

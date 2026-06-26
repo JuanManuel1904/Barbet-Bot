@@ -3,7 +3,6 @@ const { getSession, updateSession, clearSession } = require('./session');
 const { sendMessage } = require('../services/whatsapp');
 const { guardarCita, cancelarCita, reagendarCita, verificarDisponibilidad } = require('../services/citas');
 
-
 const SERVICIOS = {
   '1': 'Corte',
   '2': 'Barba',
@@ -18,7 +17,7 @@ const BARBEROS = {
 };
 
 async function handleMessage(from, text) {
-  const session = getSession(from);
+  const session = await getSession(from);
   const msg = text?.trim().toLowerCase();
 
   if (msg === 'cancelar') {
@@ -27,28 +26,25 @@ async function handleMessage(from, text) {
       ? '✅ Tu cita fue cancelada exitosamente.'
       : '⚠️ No encontré citas activas para cancelar.'
     );
-    clearSession(from);
+    await clearSession(from);
     return;
   }
 
   if (msg === 'reagendar') {
-  updateSession(from, 'REAGENDANDO_FECHA');
-  await sendMessage(from,
-    '📅 ¿A qué día quieres mover tu cita?\n\n' +
-    '1️⃣ Lunes\n2️⃣ Martes\n3️⃣ Miércoles\n' +
-    '4️⃣ Jueves\n5️⃣ Viernes\n6️⃣ Sábado'
-  );
-  return;
-}
+    await updateSession(from, 'REAGENDANDO_FECHA');
+    await sendMessage(from,
+      '📅 ¿A qué día quieres mover tu cita?\n\n' +
+      '1️⃣ Lunes\n2️⃣ Martes\n3️⃣ Miércoles\n' +
+      '4️⃣ Jueves\n5️⃣ Viernes\n6️⃣ Sábado'
+    );
+    return;
+  }
 
   switch (session.step) {
 
-
     case 'BIENVENIDA':
-      await sendMessage(from,
-        '✂️ ¡Bienvenido a la Barbería!\n\n¿Cuál es tu nombre?'
-      );
-      updateSession(from, 'PIDIENDO_NOMBRE');
+      await sendMessage(from, '✂️ ¡Bienvenido a la Barbería!\n\n¿Cuál es tu nombre?');
+      await updateSession(from, 'PIDIENDO_NOMBRE');
       break;
 
     case 'PIDIENDO_NOMBRE':
@@ -56,7 +52,7 @@ async function handleMessage(from, text) {
         await sendMessage(from, '❌ Por favor escribe tu nombre.');
         break;
       }
-      updateSession(from, 'ELIGIENDO_SERVICIO', { nombre: text.trim() });
+      await updateSession(from, 'ELIGIENDO_SERVICIO', { nombre: text.trim() });
       await sendMessage(from,
         `Hola ${text.trim()} 👋 ¿Qué servicio deseas?\n\n` +
         '1️⃣ Corte\n' +
@@ -70,7 +66,7 @@ async function handleMessage(from, text) {
         await sendMessage(from, '❌ Opción inválida. Responde 1, 2 o 3.');
         break;
       }
-      updateSession(from, 'ELIGIENDO_BARBERO', { servicio: SERVICIOS[msg] });
+      await updateSession(from, 'ELIGIENDO_BARBERO', { servicio: SERVICIOS[msg] });
       await sendMessage(from,
         '👤 ¿Con qué barbero prefieres?\n\n' +
         '1️⃣ Carlos\n' +
@@ -85,7 +81,7 @@ async function handleMessage(from, text) {
         await sendMessage(from, '❌ Opción inválida. Responde 1, 2, 3 o 4.');
         break;
       }
-      updateSession(from, 'ELIGIENDO_FECHA', { barbero: BARBEROS[msg] });
+      await updateSession(from, 'ELIGIENDO_FECHA', { barbero: BARBEROS[msg] });
       await sendMessage(from,
         '📅 ¿Qué día te queda bien?\n\n' +
         '1️⃣ Lunes\n' +
@@ -97,13 +93,13 @@ async function handleMessage(from, text) {
       );
       break;
 
-    case 'ELIGIENDO_FECHA':
+    case 'ELIGIENDO_FECHA': {
       const dias = { '1':'Lunes','2':'Martes','3':'Miércoles','4':'Jueves','5':'Viernes','6':'Sábado' };
       if (!dias[msg]) {
         await sendMessage(from, '❌ Opción inválida. Responde un número del 1 al 6.');
         break;
       }
-      updateSession(from, 'ELIGIENDO_HORA', { dia: dias[msg] });
+      await updateSession(from, 'ELIGIENDO_HORA', { dia: dias[msg] });
       await sendMessage(from,
         '🕐 ¿Qué hora prefieres?\n\n' +
         '1️⃣ 9:00am\n' +
@@ -113,11 +109,11 @@ async function handleMessage(from, text) {
         '5️⃣ 5:00pm'
       );
       break;
+    }
 
     case 'ELIGIENDO_HORA': {
       const horas = { '1':'9:00am','2':'11:00am','3':'1:00pm','4':'3:00pm','5':'5:00pm' };
 
-      // Mostrar solo slots disponibles si no eligió una opción aún
       if (!horas[msg]) {
         const { barbero: b, dia: d } = session.data;
         const checks = await Promise.all(
@@ -128,7 +124,7 @@ async function handleMessage(from, text) {
         const disponibles = checks.filter(s => s.libre);
         if (disponibles.length === 0) {
           await sendMessage(from, '😔 No hay horarios disponibles con ese barbero ese día. Escribe *hola* para elegir otro.');
-          clearSession(from);
+          await clearSession(from);
           break;
         }
         const lista = disponibles.map(s => `${s.num}️⃣ ${s.h}`).join('\n');
@@ -136,18 +132,18 @@ async function handleMessage(from, text) {
         break;
       }
 
-      // Validar que el slot elegido sigue disponible
       const { barbero, dia, nombre, servicio } = session.data;
       const disponible = await verificarDisponibilidad(barbero, dia, horas[msg]);
       if (!disponible) {
-        await sendMessage(from, `⚠️ Ese horario ya fue tomado. Elige otro:\n\n${
-          (await Promise.all(Object.entries(horas).map(async ([n, h]) => ({ n, h, libre: await verificarDisponibilidad(barbero, dia, h) }))))
-            .filter(s => s.libre).map(s => `${s.n}️⃣ ${s.h}`).join('\n')
-        }`);
+        const checks = await Promise.all(
+          Object.entries(horas).map(async ([n, h]) => ({ n, h, libre: await verificarDisponibilidad(barbero, dia, h) }))
+        );
+        const lista = checks.filter(s => s.libre).map(s => `${s.n}️⃣ ${s.h}`).join('\n');
+        await sendMessage(from, `⚠️ Ese horario ya fue tomado. Elige otro:\n\n${lista}`);
         break;
       }
 
-      updateSession(from, 'CONFIRMANDO', { hora: horas[msg] });
+      await updateSession(from, 'CONFIRMANDO', { hora: horas[msg] });
       await sendMessage(from,
         `✅ *Resumen de tu cita:*\n\n` +
         `🙍 Nombre: ${nombre}\n` +
@@ -169,7 +165,7 @@ async function handleMessage(from, text) {
             '⚠️ Lo sentimos, ese horario acaba de ser tomado por otro cliente.\n' +
             'Escribe *hola* para elegir un nuevo horario.'
           );
-          clearSession(from);
+          await clearSession(from);
           break;
         }
         const citaId = await guardarCita({ telefono: from, nombre, barbero, servicio, dia, hora });
@@ -179,10 +175,10 @@ async function handleMessage(from, text) {
           `📅 ${dia} a las ${hora}\n\n` +
           `Para cancelar escribe *cancelar* en cualquier momento.`
         );
-        clearSession(from);
+        await clearSession(from);
       } else if (msg === '2') {
         await sendMessage(from, '❌ Cita cancelada. Escribe *hola* para empezar de nuevo.');
-        clearSession(from);
+        await clearSession(from);
       } else {
         await sendMessage(from, 'Responde 1 para confirmar o 2 para cancelar.');
       }
@@ -194,7 +190,7 @@ async function handleMessage(from, text) {
         await sendMessage(from, '❌ Opción inválida. Responde un número del 1 al 6.');
         break;
       }
-      updateSession(from, 'REAGENDANDO_HORA', { nuevoDia: dias[msg] });
+      await updateSession(from, 'REAGENDANDO_HORA', { nuevoDia: dias[msg] });
       await sendMessage(from,
         '🕐 ¿A qué hora?\n\n' +
         '1️⃣ 9:00am\n2️⃣ 11:00am\n3️⃣ 1:00pm\n4️⃣ 3:00pm\n5️⃣ 5:00pm'
@@ -218,12 +214,12 @@ async function handleMessage(from, text) {
       } else {
         await sendMessage(from, '⚠️ No encontré citas activas para reagendar.');
       }
-      clearSession(from);
+      await clearSession(from);
       break;
     }
 
     default:
-      clearSession(from);
+      await clearSession(from);
       await handleMessage(from, text);
   }
 }
