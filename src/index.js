@@ -46,8 +46,14 @@ app.post('/webhook', async (req, res) => {
   if (!message) return res.sendStatus(200);
 
   const from = message.from;
-  const text = message.text?.body;
 
+  if (message.type !== 'text') {
+    console.log(`⚠️ Mensaje no textual de ${from}: ${message.type}`);
+    await sendMessage(from, '⚠️ Solo puedo procesar mensajes de texto. Por favor escribe tu respuesta.');
+    return res.sendStatus(200);
+  }
+
+  const text = message.text?.body;
   console.log(`📩 Mensaje de ${from}: ${text}`);
   await handleMessage(from, text);
 

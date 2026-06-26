@@ -17,8 +17,13 @@ const BARBEROS = {
 };
 
 async function handleMessage(from, text) {
+  if (!text?.trim()) {
+    await sendMessage(from, '⚠️ No entendí tu mensaje. Por favor escribe una opción.');
+    return;
+  }
+
   const session = await getSession(from);
-  const msg = text?.trim().toLowerCase();
+  const msg = text.trim().toLowerCase();
 
   if (msg === 'cancelar') {
     const cancelado = await cancelarCita(from);
