@@ -2,6 +2,7 @@
 const cron = require('node-cron');
 const pool = require('../db');
 const { sendMessage } = require('./whatsapp');
+const { limpiarCitasVencidas } = require('./citas');
 
 function iniciarRecordatorios() {
   // Se ejecuta cada 5 minutos
@@ -50,7 +51,21 @@ function iniciarRecordatorios() {
     }
   });
 
+  cron.schedule('5 0 * * *', async () => {
+    console.log('🧹 Ejecutando limpieza de citas vencidas...');
+    try {
+      await limpiarCitasVencidas();
+    } catch (err) {
+      console.error('❌ Error en limpieza:', err.message);
+    }
+  });
+
   console.log('⏰ Sistema de recordatorios activo');
+
+  // Limpieza inicial al arrancar
+  limpiarCitasVencidas().catch(err =>
+    console.error('❌ Error en limpieza inicial:', err.message)
+  );
 }
 
 module.exports = { iniciarRecordatorios };

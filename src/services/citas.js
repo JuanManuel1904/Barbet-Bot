@@ -96,4 +96,9 @@ async function reagendarCita(telefono, { dia, hora }) {
   return result.rowCount > 0 ? result.rows[0].id : null;
 }
 
-module.exports = { guardarCita, cancelarCita, reagendarCita };
+async function limpiarCitasVencidas() {
+  const result = await pool.query(`DELETE FROM citas WHERE fecha < NOW()::date`);
+  console.log(`🧹 Citas vencidas eliminadas: ${result.rowCount}`);
+}
+
+module.exports = { guardarCita, cancelarCita, reagendarCita, limpiarCitasVencidas };
