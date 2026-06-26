@@ -17,8 +17,8 @@ const { iniciarRecordatorios } = require('./services/recordatorios');
 const adminRouter = require('./routes/admin');
 
 // Logs de verificación
-console.log('Token:', process.env.ACCESS_TOKEN?.slice(0, 20) + '...');
-console.log('Phone ID:', process.env.PHONE_NUMBER_ID);
+// console.log('Token:', process.env.ACCESS_TOKEN?.slice(0, 20) + '...');
+// console.log('Phone ID:', process.env.PHONE_NUMBER_ID);
 
 // Rutas
 app.use('/admin', adminRouter);
