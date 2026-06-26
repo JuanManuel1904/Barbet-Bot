@@ -22,6 +22,8 @@ console.log('Phone ID:', process.env.PHONE_NUMBER_ID);
 
 // Rutas
 app.use('/admin', adminRouter);
+console.log('✅ Ruta /admin registrada');
+
 
 // ... resto del código (webhook, app.listen, etc.)
 // Verificación del webhook (Meta hace GET para confirmar)
