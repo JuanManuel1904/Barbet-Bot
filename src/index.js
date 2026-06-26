@@ -1,22 +1,29 @@
 require('dotenv').config();
-const adminRouter = require('./routes/admin');
+
+const express = require('express');
 const path = require('path');
-app.use('/admin', adminRouter);
+const app = express();
+
+// Middlewares
+app.use(express.json());
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Imports
 const { sendMessage } = require('./services/whatsapp');
 const { handleMessage } = require('./bot/flow');
 const { iniciarRecordatorios } = require('./services/recordatorios');
+const adminRouter = require('./routes/admin');
 
-
+// Logs de verificación
 console.log('Token:', process.env.ACCESS_TOKEN?.slice(0, 20) + '...');
 console.log('Phone ID:', process.env.PHONE_NUMBER_ID);
-const express = require('express');
-const app = express();
-app.use(express.json());
 
+// Rutas
+app.use('/admin', adminRouter);
+
+// ... resto del código (webhook, app.listen, etc.)
 // Verificación del webhook (Meta hace GET para confirmar)
 app.get('/webhook', (req, res) => {
   const mode      = req.query['hub.mode'];
