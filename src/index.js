@@ -1,4 +1,10 @@
 require('dotenv').config();
+const adminRouter = require('./routes/admin');
+const path = require('path');
+app.use('/admin', adminRouter);
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const { sendMessage } = require('./services/whatsapp');
 const { handleMessage } = require('./bot/flow');

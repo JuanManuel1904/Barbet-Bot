@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Barbería</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: sans-serif; background: #f5f5f5; padding: 16px; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .fecha { color: #666; font-size: 14px; margin-bottom: 16px; }
+    .stats { display: flex; gap: 12px; margin-bottom: 20px; }
+    .stat { background: white; border-radius: 10px; padding: 12px 16px; flex: 1; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .stat-num { font-size: 28px; font-weight: bold; color: #1a1a1a; }
+    .stat-label { font-size: 12px; color: #666; margin-top: 2px; }
+    .cita { background: white; border-radius: 10px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+    .cita-info { flex: 1; }
+    .cita-hora { font-size: 20px; font-weight: bold; color: #1a1a1a; }
+    .cita-detalle { font-size: 14px; color: #444; margin-top: 2px; }
+    .cita-telefono { font-size: 12px; color: #888; margin-top: 4px; }
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .badge-confirmada { background: #e8f5e9; color: #2e7d32; }
+    .badge-completada { background: #e3f2fd; color: #1565c0; }
+    .badge-cancelada { background: #ffebee; color: #c62828; }
+    .btn-completar { background: #1a1a1a; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; margin-left: 10px; }
+    .btn-completar:hover { background: #333; }
+    .empty { text-align: center; padding: 40px; color: #999; }
+    .barbero-section { margin-bottom: 24px; }
+    .barbero-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; padding-left: 4px; }
+  </style>
+</head>
+<body>
+  <h1>✂️ Panel Barbería</h1>
+  <p class="fecha">Citas de hoy — <%= fecha %></p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num"><%= totalHoy %></div>
+      <div class="stat-label">Citas hoy</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num"><%= completadas %></div>
+      <div class="stat-label">Completadas</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num"><%= pendientes %></div>
+      <div class="stat-label">Pendientes</div>
+    </div>
+  </div>
+
+  <% if (citas.length === 0) { %>
+    <div class="empty">No hay citas para hoy</div>
+  <% } %>
+
+  <% barberos.forEach(barbero => { %>
+    <% const citasBarbero = citas.filter(c => c.barbero === barbero) %>
+    <% if (citasBarbero.length > 0) { %>
+    <div class="barbero-section">
+      <div class="barbero-title">👤 <%= barbero %></div>
+      <% citasBarbero.forEach(cita => { %>
+      <div class="cita" id="cita-<%= cita.id %>">
+        <div class="cita-info">
+          <div class="cita-hora"><%= cita.hora %></div>
+          <div class="cita-detalle"><%= cita.servicio %></div>
+          <div class="cita-telefono">📱 +<%= cita.telefono %></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge badge-<%= cita.estado %>"><%= cita.estado %></span>
+          <% if (cita.estado === 'confirmada') { %>
+          <button class="btn-completar" onclick="completar(<%= cita.id %>)">✓ Listo</button>
+          <% } %>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  <% }) %>
+
+  <script>
+    async function completar(id) {
+      await fetch('/admin/completar/' + id, { method: 'POST' });
+      location.reload();
+    }
+    // Auto-refresh cada 60 segundos
+    setTimeout(() => location.reload(), 60000);
+  </script>
+</body>
+</html>
