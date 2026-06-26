@@ -11,6 +11,7 @@ router.get('/', async (req, res) => {
         TO_CHAR(c.hora, 'HH12:MI AM') AS hora,
         c.estado,
         cl.telefono,
+        cl.nombre AS cliente,
         b.nombre AS barbero,
         s.nombre AS servicio
       FROM citas c

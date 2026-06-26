@@ -87,6 +87,8 @@
           <div class="cita-info">
             <div class="cita-servicio"><%= cita.servicio %></div>
             <div class="cita-tel">
+              <i class="ti ti-user" style="font-size:12px"></i>
+              <%= cita.cliente || 'Sin nombre' %> &nbsp;·&nbsp;
               <i class="ti ti-phone" style="font-size:12px"></i>
               +<%= cita.telefono %>
             </div>

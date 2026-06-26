@@ -46,12 +46,23 @@ async function handleMessage(from, text) {
 
     case 'BIENVENIDA':
       await sendMessage(from,
-        '✂️ ¡Bienvenido a la Barbería! ¿Qué servicio deseas?\n\n' +
+        '✂️ ¡Bienvenido a la Barbería!\n\n¿Cuál es tu nombre?'
+      );
+      updateSession(from, 'PIDIENDO_NOMBRE');
+      break;
+
+    case 'PIDIENDO_NOMBRE':
+      if (!msg || msg.length < 2) {
+        await sendMessage(from, '❌ Por favor escribe tu nombre.');
+        break;
+      }
+      updateSession(from, 'ELIGIENDO_SERVICIO', { nombre: text.trim() });
+      await sendMessage(from,
+        `Hola ${text.trim()} 👋 ¿Qué servicio deseas?\n\n` +
         '1️⃣ Corte\n' +
         '2️⃣ Barba\n' +
         '3️⃣ Corte + Barba'
       );
-      updateSession(from, 'ELIGIENDO_SERVICIO');
       break;
 
     case 'ELIGIENDO_SERVICIO':
@@ -110,9 +121,10 @@ async function handleMessage(from, text) {
         break;
       }
       updateSession(from, 'CONFIRMANDO', { hora: horas[msg] });
-      const { servicio, barbero, dia, hora } = { ...getSession(from).data, hora: horas[msg] };
+      const { servicio, barbero, dia, hora, nombre } = { ...getSession(from).data, hora: horas[msg] };
       await sendMessage(from,
         `✅ *Resumen de tu cita:*\n\n` +
+        `🙍 Nombre: ${nombre}\n` +
         `✂️ Servicio: ${servicio}\n` +
         `👤 Barbero: ${barbero}\n` +
         `📅 Día: ${dia}\n` +
@@ -123,8 +135,8 @@ async function handleMessage(from, text) {
 
     case 'CONFIRMANDO':
       if (msg === '1') {
-        const { servicio, barbero, dia, hora } = session.data;
-        const citaId = await guardarCita({ telefono: from, barbero, servicio, dia, hora });
+        const { servicio, barbero, dia, hora, nombre } = session.data;
+        const citaId = await guardarCita({ telefono: from, nombre, barbero, servicio, dia, hora });
         await sendMessage(from,
           `🎉 ¡Cita confirmada! (ID: #${citaId})\n\n` +
           `✂️ ${servicio} con ${barbero}\n` +

@@ -1,14 +1,18 @@
 // src/services/citas.js
 const pool = require('../db');
 
-async function guardarCita({ telefono, barbero, servicio, dia, hora }) {
-  // Buscar o crear cliente
+async function guardarCita({ telefono, nombre, barbero, servicio, dia, hora }) {
+  // Buscar o crear cliente y actualizar nombre
   let cliente = await pool.query(
     'SELECT id FROM clientes WHERE telefono = $1', [telefono]
   );
   if (cliente.rows.length === 0) {
     cliente = await pool.query(
-      'INSERT INTO clientes (telefono) VALUES ($1) RETURNING id', [telefono]
+      'INSERT INTO clientes (telefono, nombre) VALUES ($1, $2) RETURNING id', [telefono, nombre]
+    );
+  } else {
+    await pool.query(
+      'UPDATE clientes SET nombre = $1 WHERE telefono = $2', [nombre, telefono]
     );
   }
   const clienteId = cliente.rows[0].id;
