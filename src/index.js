@@ -24,8 +24,6 @@ console.log('Phone ID:', process.env.PHONE_NUMBER_ID);
 app.use('/admin', adminRouter);
 console.log('✅ Ruta /admin registrada');
 
-
-// ... resto del código (webhook, app.listen, etc.)
 // Verificación del webhook (Meta hace GET para confirmar)
 app.get('/webhook', (req, res) => {
   const mode      = req.query['hub.mode'];
@@ -56,10 +54,17 @@ app.post('/webhook', async (req, res) => {
   res.sendStatus(200);
 });
 
+// Error middleware global (debe ir después de todas las rutas)
+app.use((err, req, res, next) => {
+  console.error('❌ Error global:', err.message);
+  res.status(500).send(`<pre>Error: ${err.message}</pre>`);
+});
+
 iniciarRecordatorios();
 
-app.listen(process.env.PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${process.env.PORT}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
 
 
