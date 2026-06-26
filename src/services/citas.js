@@ -96,9 +96,24 @@ async function reagendarCita(telefono, { dia, hora }) {
   return result.rowCount > 0 ? result.rows[0].id : null;
 }
 
+async function verificarDisponibilidad(barbero, dia, hora) {
+  const fecha = proximaFecha(dia);
+  const horaFormato = convertirHora(hora);
+  const result = await pool.query(
+    `SELECT 1 FROM citas
+     WHERE barbero_id = (SELECT id FROM barberos WHERE nombre = $1)
+       AND fecha = $2
+       AND hora = $3
+       AND estado = 'confirmada'
+     LIMIT 1`,
+    [barbero === 'Sin preferencia' ? 'Carlos' : barbero, fecha, horaFormato]
+  );
+  return result.rowCount === 0; // true = disponible
+}
+
 async function limpiarCitasVencidas() {
   const result = await pool.query(`DELETE FROM citas WHERE fecha < NOW()::date`);
   console.log(`🧹 Citas vencidas eliminadas: ${result.rowCount}`);
 }
 
-module.exports = { guardarCita, cancelarCita, reagendarCita, limpiarCitasVencidas };
+module.exports = { guardarCita, cancelarCita, reagendarCita, limpiarCitasVencidas, verificarDisponibilidad };
